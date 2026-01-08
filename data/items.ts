@@ -2,77 +2,7 @@
 import { Item } from '../types';
 
 export const ITEMS: Record<string, Item> = {
-  // Consumables (Shop)
-  'hot-dog': {
-    id: 'hot-dog',
-    name: '街头热狗',
-    description: '西雅图路边摊，虽然全是添加剂但真香。',
-    width: 1,
-    height: 1,
-    color: '#fbbf24',
-    icon: '🌭',
-    baseValue: 1,
-    price: 8,
-    effect: (s) => ({ hunger: s.hunger + 30, stress: s.stress - 5, health: s.health - 1 })
-  },
-  'onigiri-expired': {
-    id: 'onigiri-expired',
-    name: '打折临期饭团',
-    description: '便利店深夜的最后恩赐，可能拉肚子。',
-    width: 1,
-    height: 1,
-    color: '#94a3b8',
-    icon: '🍙',
-    baseValue: 0.5,
-    price: 2,
-    effect: (s) => ({ hunger: s.hunger + 25, health: s.health - 5 })
-  },
-  'starbucks-latte': {
-    id: 'starbucks-latte',
-    name: '星巴克拿铁',
-    description: '熟悉的味道，能让你找回一点中产的感觉。',
-    width: 1,
-    height: 1,
-    color: '#059669',
-    icon: '☕',
-    baseValue: 2,
-    price: 6,
-    effect: (s) => ({ stress: s.stress - 15, stats: { sanity: s.stats.sanity + 2 } })
-  },
-  'vitamin-pack': {
-    id: 'vitamin-pack',
-    name: '综合维生素',
-    description: '补充长期营养不良带来的亏空。',
-    width: 1,
-    height: 1,
-    color: '#60a5fa',
-    icon: '💊',
-    baseValue: 10,
-    price: 45,
-    effect: (s) => ({ health: s.health + 15, stats: { survival: s.stats.survival + 1 } })
-  },
-  'painkillers': {
-    id: 'painkillers',
-    name: '强效止痛片 (强化剂)',
-    description: '麻木身体的痛苦。大幅降压，但会增加抗性并加剧饥饿。',
-    width: 1,
-    height: 1,
-    color: '#f87171',
-    icon: '🩹',
-    baseValue: 5,
-    price: 35,
-    // 强化剂逻辑：效果受耐受度影响
-    effect: (s) => {
-        const reduction = 40 * (1 - s.addictionTolerance/100);
-        return { 
-            health: s.health + 5, 
-            stress: s.stress - reduction, 
-            hunger: s.hunger - 15, // 加剧饥饿
-            addictionTolerance: s.addictionTolerance + 10,
-            stats: { sanity: s.stats.sanity - 2 } 
-        };
-    }
-  },
+  // --- 基础食物 (Food) ---
   'instant-noodles': {
     id: 'instant-noodles',
     name: '辛拉面',
@@ -83,42 +13,109 @@ export const ITEMS: Record<string, Item> = {
     icon: '🍜',
     baseValue: 1,
     price: 3,
-    effect: (s) => ({ hunger: s.hunger + 40, health: s.health - 2 })
+    effect: (s) => ({ hunger: s.hunger + 35, health: s.health - 2 })
   },
-  'cheap-whiskey': {
-    id: 'cheap-whiskey',
-    name: '平价威士忌 (强化剂)',
-    description: '度数很高，用来消毒还是麻痹自己？大幅降压，但损耗健康。',
-    width: 1,
-    height: 2,
-    color: '#92400e',
-    icon: '🥃',
-    baseValue: 15,
-    price: 28,
-    effect: (s) => {
-        const reduction = 60 * (1 - s.addictionTolerance/100);
-        return { 
-            stress: s.stress - reduction, 
-            health: s.health - 15, 
-            hunger: s.hunger - 10,
-            addictionTolerance: s.addictionTolerance + 5,
-            stats: { sanity: s.stats.sanity - 5 } 
-        };
-    }
+  'organic-salad': {
+    id: 'organic-salad',
+    name: '有机羽衣甘蓝沙拉',
+    description: '中产阶级的心理安慰剂，除了贵没毛病。',
+    width: 2,
+    height: 1,
+    color: '#10b981',
+    icon: '🥗',
+    baseValue: 5,
+    price: 24,
+    effect: (s) => ({ hunger: s.hunger + 20, health: s.health + 10, stress: s.stress - 15, stats: { sanity: s.stats.sanity + 2 } })
   },
-  'caffeine-patch': {
-    id: 'caffeine-patch',
-    name: '高浓度咖啡因贴片',
-    description: '让你保持清醒，但代价是心脏负荷。',
+  'expired-spam': {
+    id: 'expired-spam',
+    name: '临期午餐肉',
+    description: '味道很重，但热量很高。',
     width: 1,
     height: 1,
-    color: '#fbbf24',
-    icon: '⚡',
-    baseValue: 3,
-    price: 15,
-    effect: (s) => ({ stress: s.stress - 10, health: s.health - 5, stats: { survival: s.stats.survival + 2 } })
+    color: '#fb7185',
+    icon: '🥩',
+    baseValue: 2,
+    price: 4,
+    effect: (s) => ({ hunger: s.hunger + 40, health: s.health - 5 })
   },
-  // Electronics
+
+  // --- 医疗与强化剂 (Meds & Reinforcements) ---
+  'painkillers': {
+    id: 'painkillers',
+    name: '强效止痛片',
+    description: '麻木身体的痛苦。大幅降压，但会损耗理智。',
+    width: 1,
+    height: 1,
+    color: '#f87171',
+    icon: '🩹',
+    baseValue: 5,
+    price: 35,
+    effect: (s) => ({ stress: s.stress - 35, health: s.health + 5, stats: { sanity: s.stats.sanity - 5 }, addictionTolerance: s.addictionTolerance + 5 })
+  },
+  'blue-pill': {
+    id: 'blue-pill',
+    name: '“蓝色强化剂”',
+    description: '先锋广场的特产。让你暂时忘记饥饿与寒冷，但灵魂正在枯萎。',
+    width: 1,
+    height: 1,
+    color: '#60a5fa',
+    icon: '🔹',
+    baseValue: 15,
+    price: 25,
+    effect: (s) => ({ stress: s.stress - 60, hunger: s.hunger + 20, health: s.health - 10, addiction: s.addiction + 15, stats: { sanity: s.stats.sanity - 10 } })
+  },
+
+  // --- 装备与电子产品 (Gear & Electronics) ---
+  'noise-canceling-headphones': {
+    id: 'noise-canceling-headphones',
+    name: 'Bose 降噪耳机',
+    description: '屏蔽噪音，屏蔽这个正在崩塌的世界。',
+    width: 2,
+    height: 2,
+    color: '#1e293b',
+    icon: '🎧',
+    baseValue: 250,
+    price: 399,
+    effect: (s) => ({ stress: s.stress - 25, stats: { intellect: s.stats.intellect + 5, sanity: s.stats.sanity + 10 } })
+  },
+  'sharp-knife': {
+    id: 'sharp-knife',
+    name: '折叠刀',
+    description: '在西雅图的阴影里，这能给你一点安全感。',
+    width: 1,
+    height: 1,
+    color: '#94a3b8',
+    icon: '🔪',
+    baseValue: 10,
+    price: 45,
+    effect: (s) => ({ stats: { survival: s.stats.survival + 10, luck: s.stats.luck + 5 } })
+  },
+  'custom-suit': {
+    id: 'custom-suit',
+    name: '高定西装',
+    description: '当你穿上它，那些猎头才会把你当人看。',
+    width: 2,
+    height: 3,
+    color: '#1e293b',
+    icon: '👔',
+    baseValue: 500,
+    price: 1200,
+    effect: (s) => ({ stats: { social: s.stats.social + 25, sanity: s.stats.sanity + 10 } })
+  },
+
+  // --- 剧情与特殊物品 (Story/Special) ---
+  'legal-papers': {
+    id: 'legal-papers',
+    name: '离婚补充协议',
+    description: '杰西卡留下的文书。上面写满了对你无能的审判。',
+    width: 2,
+    height: 2,
+    color: '#ffffff',
+    icon: '📄',
+    baseValue: 0,
+    effect: (s) => ({ stress: s.stress + 20, stats: { sanity: s.stats.sanity - 15 } })
+  },
   'macbook-pro': {
     id: 'macbook-pro',
     name: 'MacBook Pro',
@@ -154,12 +151,38 @@ export const ITEMS: Record<string, Item> = {
   },
   'water-bottle': {
     id: 'water-bottle',
-    name: '保温瓶',
-    description: '装水的容器。',
+    name: '瓶装水',
+    description: '干净的饮用水。',
     width: 1,
     height: 2,
     color: '#3b82f6',
+    icon: '💧',
+    baseValue: 1,
+    price: 2,
+    effect: (s) => ({ hunger: s.hunger + 10 })
+  },
+  'hot-dog': {
+    id: 'hot-dog',
+    name: '热狗',
+    description: '街头快餐。',
+    width: 1,
+    height: 1,
+    color: '#fbbf24',
+    icon: '🌭',
+    baseValue: 1,
+    price: 8,
+    effect: (s) => ({ hunger: s.hunger + 30 })
+  },
+  'melatonin-ultra': {
+    id: 'melatonin-ultra',
+    name: '褪黑素',
+    description: '助眠药物。',
+    width: 1,
+    height: 1,
+    color: '#818cf8',
+    icon: '🌙',
     baseValue: 15,
-    icon: '🍼'
+    price: 55,
+    effect: (s) => ({ stress: s.stress - 30 })
   }
 };
