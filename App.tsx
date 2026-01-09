@@ -1,15 +1,15 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PlayerState, GameHistoryEntry, GameEvent, Stats, LocationId, Location, InventoryItem, Item, Weather, SubLocation, Vehicle, MonthlyBill, Character, SubLocationAction, PendingDelivery } from './types';
-import { EVENTS } from './data/events';
-import { ITEMS } from './data/items';
-import { LOCATIONS } from './data/locations';
-import StatusPanel from './components/StatusPanel';
-import ScenePanel from './components/ScenePanel';
-import HistoryPanel from './components/HistoryPanel';
-import DeviceOverlay from './components/DeviceOverlay';
-import MapSystem from './components/MapSystem';
-import InventoryGrid from './components/InventoryGrid';
+import React, { useState, useEffect } from 'react';
+import { PlayerState, LocationId, Location, InventoryItem, Item, Weather, Character, SubLocationAction, VehicleSpec, MonthlyBill } from './types.ts';
+import { EVENTS } from './data/events.ts';
+import { ITEMS } from './data/items.ts';
+import { LOCATIONS } from './data/locations.ts';
+import StatusPanel from './components/StatusPanel.tsx';
+import ScenePanel from './components/ScenePanel.tsx';
+import HistoryPanel from './components/HistoryPanel.tsx';
+import DeviceOverlay from './components/DeviceOverlay.tsx';
+import MapSystem from './components/MapSystem.tsx';
+import InventoryGrid from './components/InventoryGrid.tsx';
 
 const START_DATE = new Date('2026-07-27');
 const WEATHER_ICONS: Record<Weather, string> = {
@@ -137,8 +137,8 @@ const App: React.FC = () => {
             state={gameState} 
             onShowBills={() => setShowBills(true)} 
             onShowStorage={setShowStorage} 
-            onUseItem={(item) => item.id === 'macbook-pro' ? setActiveDevice('laptop') : item.id === 'smartphone' ? setActiveDevice('phone') : null}
-            onUpdateInventory={(newItems) => setGameState(prev => ({ ...prev, inventory: newItems }))}
+            onUseItem={(item: any) => item.id === 'macbook-pro' ? setActiveDevice('laptop') : item.id === 'smartphone' ? setActiveDevice('phone') : null}
+            onUpdateInventory={(newItems: any[]) => setGameState(prev => ({ ...prev, inventory: newItems }))}
           />
 
           <div className="flex-1 flex flex-col relative bg-[#050608] overflow-hidden">
@@ -163,7 +163,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Overlays */}
-          {activeDevice && <DeviceOverlay type={activeDevice} state={gameState} onClose={() => setActiveDevice(null)} setGameState={setGameState} onEventChoice={(event, idx) => {}} />}
+          {activeDevice && <DeviceOverlay type={activeDevice} state={gameState} onClose={() => setActiveDevice(null)} setGameState={setGameState} onEventChoice={() => {}} />}
           {showMap && <MapSystem state={gameState} onClose={() => setShowMap(false)} onTravel={(loc, sub, fuel, time) => { setGameState(prev => ({ ...prev, currentLocation: loc.id, currentSubLocationId: sub.id, hour: (prev.hour + time)%24, vehicle: prev.vehicle ? {...prev.vehicle, fuel: prev.vehicle.fuel - fuel} : null })); setShowMap(false); }} />}
           {showStorage && (
              <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-12 animate-in zoom-in">
