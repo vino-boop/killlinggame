@@ -23,7 +23,7 @@ const INITIAL_STATE: PlayerState = {
   day: 1,
   hour: 14,
   weather: 'Cloudy',
-  cash: 12000, 
+  cash: 5500,
   debt: 0,
   health: 95,
   stress: 40,
@@ -101,6 +101,7 @@ const App: React.FC = () => {
   const [activeDevice, setActiveDevice] = useState<'laptop' | 'phone' | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [showStorage, setShowStorage] = useState<'vehicle' | 'home' | null>(null);
+  const [showBills, setShowBills] = useState(false);
   const [activeDialogue, setActiveDialogue] = useState<{char: Character, text: string} | null>(null);
   const historyEndRef = useRef<HTMLDivElement>(null);
 
@@ -113,14 +114,25 @@ const App: React.FC = () => {
     else if (gameState.stress >= 100) setGameOver({ code: "COGNITIVE_BREACH", reason: "你的理智已经彻底断裂..." });
   }, [gameState.health, gameState.stress]);
 
-  const advanceTime = (hours: number) => {
+  const formatTime = (hour: number) => {
+    const h = Math.floor(hour);
+    const m = Math.round((hour % 1) * 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  };
+
+  const advanceTime = (hours: number, isSleeping: boolean = false) => {
     setGameState(prev => {
       let newHealth = prev.health;
       let newHunger = Math.max(0, prev.hunger - (hours * 3.75));
       let newStress = prev.stress;
 
-      if (newHunger < 10) newHealth -= (hours * 5);
-      if (newHealth < prev.health && prev.stress > 80) newHealth -= (prev.health - newHealth) * 0.2;
+      if (!isSleeping && newHunger < 10) {
+        newHealth -= (hours * 5);
+      }
+      
+      if (!isSleeping && newHealth < prev.health && prev.stress > 80) {
+        newHealth -= (prev.health - newHealth) * 0.2;
+      }
 
       const totalHours = prev.hour + hours;
       const daysPassed = Math.floor(totalHours / 24);
@@ -134,6 +146,21 @@ const App: React.FC = () => {
     });
   };
 
+  const handlePayBill = (bill: MonthlyBill) => {
+    if (gameState.cash < bill.amount) return;
+    setGameState(prev => ({
+      ...prev,
+      cash: prev.cash - bill.amount,
+      bills: prev.bills.filter(b => b.id !== bill.id),
+      history: [...prev.history, {
+        day: prev.day, hour: prev.hour,
+        title: "账单支付",
+        description: `支付了 ${bill.name}，金额: $${bill.amount.toLocaleString()}。暂时解除了危机。`,
+        type: 'billing'
+      }]
+    }));
+  };
+
   const handleSubAction = (action: SubLocationAction) => {
     const currentLoc = LOCATIONS.find(l => l.id === gameState.currentLocation);
     const adjustedCost = Math.round(action.costMoney * (currentLoc?.priceMultiplier || 1));
@@ -144,7 +171,6 @@ const App: React.FC = () => {
       let newInventory = [...prev.inventory];
       let historyMsg = action.description;
 
-      // 如果有物品奖励（购买逻辑）
       if (action.gainItem) {
         const spot = findFreeSpot(prev.inventorySize, prev.inventory, action.gainItem);
         if (!spot) {
@@ -152,26 +178,31 @@ const App: React.FC = () => {
           return prev;
         }
         newInventory.push({ ...action.gainItem, ...spot });
-        // Corrected: action.icon was accessed directly on SubLocationAction but it belongs to gainItem.
         historyMsg = `获得了 ${action.gainItem.icon || ''} ${action.gainItem.name}。${action.description}`;
       }
 
       const effectResult = action.effect(prev);
       const { stats: effectStats, ...otherChanges } = effectResult;
       const newStats: Stats = { ...prev.stats, ...(effectStats || {}) };
+      const isSleepAction = action.id.includes('sleep');
 
       let targetHealth = (otherChanges.health !== undefined ? otherChanges.health : prev.health);
-      if (targetHealth < prev.health && prev.stress > 80) targetHealth -= (prev.health - targetHealth) * 0.2;
+      
+      if (!isSleepAction && targetHealth < prev.health && prev.stress > 80) {
+        targetHealth -= (prev.health - targetHealth) * 0.2;
+      }
 
       const totalHours = prev.hour + action.costTime;
       const daysPassed = Math.floor(totalHours / 24);
-      const newHunger = Math.max(0, (otherChanges.hunger !== undefined ? otherChanges.hunger : prev.hunger) - (action.costTime * 3.75));
+      
+      const hungerDecay = action.costTime * 3.75;
+      const newHunger = Math.max(0, (otherChanges.hunger !== undefined ? otherChanges.hunger : prev.hunger) - hungerDecay);
 
       return { 
         ...prev, 
         ...otherChanges, 
         inventory: newInventory,
-        health: targetHealth,
+        health: Math.max(0, targetHealth),
         hunger: newHunger,
         cash: prev.cash - adjustedCost, 
         hour: totalHours % 24, 
@@ -192,8 +223,9 @@ const App: React.FC = () => {
       const newVehicle = prev.vehicle ? { ...prev.vehicle, fuel: Math.max(0, prev.vehicle.fuel - costFuel) } : null;
       const totalHours = prev.hour + costTime;
       const daysPassed = Math.floor(totalHours / 24);
-      const newHunger = Math.max(0, prev.hunger - (costTime * 3.75));
-      const stressImpact = costFuel === 0 ? 10 : 2; // 无车旅行更累
+      const hungerDecay = costTime * 3.75;
+      const newHunger = Math.max(0, prev.hunger - hungerDecay);
+      const stressImpact = costFuel === 0 ? 10 : 2;
 
       return {
         ...prev,
@@ -269,6 +301,8 @@ const App: React.FC = () => {
       setActiveDialogue({ char, text: dialogue });
   };
 
+  const totalBills = gameState.bills.reduce((sum, b) => sum + b.amount, 0);
+
   return (
     <div className="flex h-screen w-full bg-[#050608] text-slate-300 select-none overflow-hidden font-sans relative">
       <div className="w-80 border-r border-white/5 p-6 flex flex-col gap-6 bg-[#0a0c10] overflow-y-auto shrink-0 z-30 shadow-2xl">
@@ -277,17 +311,32 @@ const App: React.FC = () => {
           <div><h2 className="font-bold text-lg text-white">Ryan (35)</h2><p className="text-[10px] text-blue-400 uppercase tracking-widest font-black">中产残响</p></div>
         </div>
         <RadarChart stats={gameState.stats} />
+        
         <div className="space-y-4">
           <StatItem label="健康" value={gameState.health} color="bg-emerald-500" />
           <StatItem label="饥饿" value={gameState.hunger} color="bg-orange-400" />
           <StatItem label="压力" value={gameState.stress} color="bg-purple-500" />
-          <div className="flex justify-between border-t border-white/5 pt-4">
-             <div className="flex flex-col"><span className="text-[8px] text-gray-500 uppercase font-black">CASH</span><span className="text-sm font-black text-white mono">${gameState.cash.toLocaleString()}</span></div>
-          </div>
+          
+          <button 
+            onClick={() => setShowBills(true)}
+            className="w-full flex flex-col gap-2 pt-4 border-t border-white/5 text-left group hover:bg-white/[0.02] rounded-xl transition-all p-2 -mx-2"
+          >
+             <div className="flex justify-between items-end">
+                <div className="flex flex-col"><span className="text-[8px] text-gray-500 uppercase font-black tracking-widest">CASH</span><span className="text-sm font-black text-white mono">${gameState.cash.toLocaleString()}</span></div>
+                <div className="flex flex-col text-right group-hover:translate-x-1 transition-transform">
+                  <span className="text-[8px] text-red-500 uppercase font-black tracking-widest">TOTAL DEBT</span>
+                  <span className="text-sm font-black text-red-500 mono">${totalBills.toLocaleString()} →</span>
+                </div>
+             </div>
+             {gameState.cash < totalBills && (
+                <div className="px-2 py-1 bg-red-950/30 border border-red-500/20 rounded text-[8px] text-red-400 font-black uppercase text-center animate-pulse">流动性危机 (Liquidity Crisis)</div>
+             )}
+          </button>
         </div>
+
         {gameState.vehicle && (
-          <button onClick={() => setShowStorage('vehicle')} className="bg-white/5 border border-white/5 rounded-2xl p-4 text-left hover:bg-blue-600/10 transition-all group">
-             <div className="flex justify-between items-center mb-3"><span className="text-[9px] text-blue-400 font-black uppercase tracking-widest">VEHICLE</span><span className="text-[10px] text-blue-500 font-black group-hover:translate-x-1 transition-transform">TRUNK (8x8) →</span></div>
+          <button onClick={() => setShowStorage('vehicle')} className="bg-white/5 border border-white/5 rounded-2xl p-4 text-left hover:bg-blue-600/10 transition-all group mt-auto">
+             <div className="flex justify-between items-center mb-3"><span className="text-[9px] text-blue-400 font-black uppercase tracking-widest">VEHICLE</span><span className="text-[10px] text-blue-500 font-black group-hover:translate-x-1 transition-transform">TRUNK →</span></div>
              <div className="flex flex-col gap-1">
                 <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>Fuel {gameState.vehicle.fuel}%</span></div>
                 <div className="h-1 bg-white/5 rounded-full overflow-hidden"><div className={`h-full bg-blue-600`} style={{ width: `${gameState.vehicle.fuel}%` }}></div></div>
@@ -301,7 +350,7 @@ const App: React.FC = () => {
       <div className="flex-1 flex flex-col relative bg-[#050608] overflow-hidden">
         <div className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-[#0a0c10]/90 backdrop-blur-md shrink-0 z-20">
             <div className="flex items-center gap-8">
-                <div className="flex flex-col items-center"><span className="mono text-blue-500 font-black text-xl">{START_DATE.toLocaleDateString()}</span><span className="text-[10px] mono text-gray-500 font-bold uppercase tracking-widest">{gameState.hour}:00</span></div>
+                <div className="flex flex-col items-center"><span className="mono text-blue-500 font-black text-xl">{START_DATE.toLocaleDateString()}</span><span className="text-[10px] mono text-gray-500 font-bold uppercase tracking-widest">{formatTime(gameState.hour)}</span></div>
                 <div className="flex items-center gap-4"><span className="text-3xl">{WEATHER_ICONS[gameState.weather]}</span><div className="flex flex-col"><span className="text-xs font-black text-white uppercase tracking-wider">{currentLocData?.name}</span><span className="text-[10px] text-blue-400 font-bold italic">{currentSubLocData?.name}</span></div></div>
             </div>
             {currentLocData && <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">Market Index: {currentLocData.priceMultiplier}x</span>}
@@ -359,7 +408,7 @@ const App: React.FC = () => {
               {gameState.history.map((event, idx) => (
                 <div key={idx} className="relative pl-8 border-l border-white/5 pb-2">
                   <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full ring-4 ring-[#0a0c10] bg-slate-700"></div>
-                  <div className="flex justify-between items-center mb-2"><h4 className="font-black text-white text-[10px] uppercase tracking-wider">{event.title}</h4><span className="text-[9px] text-slate-700 mono">{event.hour}:00</span></div>
+                  <div className="flex justify-between items-center mb-2"><h4 className="font-black text-white text-[10px] uppercase tracking-wider">{event.title}</h4><span className="text-[9px] text-slate-700 mono">{formatTime(event.hour)}</span></div>
                   <p className="text-slate-500 text-xs leading-relaxed mb-2 font-medium">{event.description}</p>
                   {event.consequence && <p className="text-blue-400 text-[10px] font-black uppercase italic">>> {event.consequence}</p>}
                 </div>
@@ -383,6 +432,54 @@ const App: React.FC = () => {
                     <button onClick={() => setActiveDialogue(null)} className="w-full py-5 bg-blue-600 text-white font-black rounded-full uppercase tracking-[0.2em] shadow-2xl hover:bg-blue-500 transition-all">End Conversation</button>
                 </div>
             </div>
+        )}
+
+        {showBills && (
+          <div className="absolute inset-0 z-[120] flex items-center justify-center p-12 animate-in fade-in bg-black/80 backdrop-blur-md">
+            <div className="max-w-xl w-full bg-[#0a0c10] border border-white/5 rounded-[3rem] p-10 shadow-2xl flex flex-col gap-8">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">待扣款项目 (Pending Bills)</h2>
+                  <p className="text-[10px] text-red-500 font-black uppercase tracking-[0.3em] mt-2">Financial Obligations Log</p>
+                </div>
+                <button onClick={() => setShowBills(false)} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all text-xl">✕</button>
+              </div>
+              
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                {gameState.bills.length > 0 ? (
+                  gameState.bills.map(bill => (
+                    <div key={bill.id} className="p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-black text-white text-base uppercase italic">{bill.name}</h4>
+                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Due Day {bill.dueDate}</p>
+                        </div>
+                        <span className="text-xl font-black text-red-500 mono">${bill.amount.toLocaleString()}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 italic font-medium leading-relaxed opacity-60">"{bill.description}"</p>
+                      <button 
+                        onClick={() => handlePayBill(bill)}
+                        disabled={gameState.cash < bill.amount}
+                        className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${gameState.cash >= bill.amount ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20 active:scale-95' : 'bg-white/5 text-slate-700 cursor-not-allowed border border-white/5'}`}
+                      >
+                        {gameState.cash >= bill.amount ? '立刻结算 (Pay Now)' : '资金不足 (Insufficient Funds)'}
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-20 text-center opacity-20 flex flex-col items-center gap-4">
+                    <span className="text-6xl">💸</span>
+                    <p className="text-[10px] font-black uppercase tracking-[0.5em]">No Pending Debts</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-6 bg-blue-600/5 border border-blue-500/20 rounded-3xl flex justify-between items-center">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Available Balance</span>
+                <span className="text-2xl font-black text-white mono">${gameState.cash.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
         )}
 
         {showStorage && (

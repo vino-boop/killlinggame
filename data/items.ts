@@ -15,10 +15,22 @@ export const ITEMS: Record<string, Item> = {
     price: 3,
     effect: (s) => ({ hunger: s.hunger + 35, health: s.health - 2 })
   },
+  'junk-food-bundle': {
+    id: 'junk-food-bundle',
+    name: '加油站大礼包',
+    description: '过期边缘的薯片、辣条和士力架。',
+    width: 2,
+    height: 1,
+    color: '#fbbf24',
+    icon: '🥨',
+    baseValue: 2,
+    price: 12,
+    effect: (s) => ({ hunger: s.hunger + 45, stress: s.stress - 10, health: s.health - 5 })
+  },
   'organic-salad': {
     id: 'organic-salad',
     name: '有机羽衣甘蓝沙拉',
-    description: '中产阶级的心理安慰剂，除了贵没毛病。',
+    description: '中产阶级的心理安慰剂。',
     width: 2,
     height: 1,
     color: '#10b981',
@@ -40,11 +52,28 @@ export const ITEMS: Record<string, Item> = {
     effect: (s) => ({ hunger: s.hunger + 40, health: s.health - 5 })
   },
 
+  // --- 燃料与特殊物品 (Fuel & Special) ---
+  'gasoline-can': {
+    id: 'gasoline-can',
+    name: '便携汽油桶',
+    description: '装满了燃油。放在后备箱里，可以在任何地方为车辆补充 40% 的燃料。',
+    width: 2,
+    height: 2,
+    color: '#f59e0b',
+    icon: '⛽',
+    baseValue: 25,
+    price: 45,
+    effect: (s) => {
+        if (!s.vehicle) return { history: [...s.history, { day: s.day, hour: s.hour, title: "使用失败", description: "你甚至没有一辆车，想往哪灌油？", type: 'action' }] };
+        return { vehicle: { ...s.vehicle, fuel: Math.min(100, s.vehicle.fuel + 40) } };
+    }
+  },
+
   // --- 医疗与强化剂 (Meds & Reinforcements) ---
   'painkillers': {
     id: 'painkillers',
     name: '强效止痛片',
-    description: '麻木身体的痛苦。大幅降压，但会损耗理智。',
+    description: '麻木身体的痛苦。',
     width: 1,
     height: 1,
     color: '#f87171',
@@ -56,7 +85,7 @@ export const ITEMS: Record<string, Item> = {
   'blue-pill': {
     id: 'blue-pill',
     name: '“蓝色强化剂”',
-    description: '先锋广场的特产。让你暂时忘记饥饿与寒冷，但灵魂正在枯萎。',
+    description: '先锋广场的特产。',
     width: 1,
     height: 1,
     color: '#60a5fa',
@@ -82,7 +111,7 @@ export const ITEMS: Record<string, Item> = {
   'sharp-knife': {
     id: 'sharp-knife',
     name: '折叠刀',
-    description: '在西雅图的阴影里，这能给你一点安全感。',
+    description: '自卫武器。',
     width: 1,
     height: 1,
     color: '#94a3b8',
@@ -94,7 +123,7 @@ export const ITEMS: Record<string, Item> = {
   'custom-suit': {
     id: 'custom-suit',
     name: '高定西装',
-    description: '当你穿上它，那些猎头才会把你当人看。',
+    description: '找回体面。',
     width: 2,
     height: 3,
     color: '#1e293b',
@@ -104,11 +133,11 @@ export const ITEMS: Record<string, Item> = {
     effect: (s) => ({ stats: { social: s.stats.social + 25, sanity: s.stats.sanity + 10 } })
   },
 
-  // --- 剧情与特殊物品 (Story/Special) ---
+  // --- 剧情与特殊物品 ---
   'legal-papers': {
     id: 'legal-papers',
     name: '离婚补充协议',
-    description: '杰西卡留下的文书。上面写满了对你无能的审判。',
+    description: '杰西卡留下的文书。',
     width: 2,
     height: 2,
     color: '#ffffff',
@@ -119,7 +148,7 @@ export const ITEMS: Record<string, Item> = {
   'macbook-pro': {
     id: 'macbook-pro',
     name: 'MacBook Pro',
-    description: '你最后的生产力工具。',
+    description: '最后的生产力工具。',
     width: 2,
     height: 2,
     color: '#94a3b8',
