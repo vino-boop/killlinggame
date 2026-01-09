@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { PlayerState, AIScenario, LocationId } from "../types";
+import { PlayerState, AIScenario, LocationId } from "../types.ts";
 
 const LOCATIONS_DATA: Record<LocationId, string> = {
   'pioneer-square': "Pioneer Square (The Depths): Oldest part of Seattle, heart of the homeless crisis. Cheap 'reinforcements' (fentanyl/blues) are everywhere. High survival risk.",
@@ -9,7 +9,6 @@ const LOCATIONS_DATA: Record<LocationId, string> = {
   'ballard': "Ballard: Industrial roots, fishing docks, van-life settlements. Gritty but potentially safe for a while.",
   'rainier-valley': "Rainier Valley: Diverse, residential, far from the center. Cheaper food, but transportation is a nightmare.",
   'bellevue': "Bellevue: Across the lake. Clean, wealthy, hostile to 'outsiders'. If you look too poor, you'll be moved along immediately.",
-  // Added missing location keys to fix TypeScript error
   'u-district': "University District: Academic life meets street survival. Cheap food but high competition for resources.",
   'fremont': "Fremont: Artistic and tech-heavy. The 'Center of the Universe' has plenty of places to hide, but few places to belong."
 };
@@ -27,8 +26,10 @@ Return valid JSON format ONLY.
 `;
 
 export const generateNextScenario = async (state: PlayerState): Promise<AIScenario> => {
-  // Fix: Instantiate GoogleGenAI per-request using the environment variable directly
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // 安全获取 API Key
+  const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : '';
+  const ai = new GoogleGenAI({ apiKey: apiKey || '' });
+  
   const locationContext = LOCATIONS_DATA[state.currentLocation];
   
   const prompt = `

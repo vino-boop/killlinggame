@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { PlayerState, LocationId, Location, InventoryItem, Item, Weather, Character, SubLocationAction, VehicleSpec, MonthlyBill } from './types';
-import { EVENTS } from './data/events';
-import { ITEMS } from './data/items';
-import { LOCATIONS } from './data/locations';
-import StatusPanel from './components/StatusPanel';
-import ScenePanel from './components/ScenePanel';
-import HistoryPanel from './components/HistoryPanel';
-import DeviceOverlay from './components/DeviceOverlay';
-import MapSystem from './components/MapSystem';
-import InventoryGrid from './components/InventoryGrid';
+import { PlayerState, LocationId, Location, InventoryItem, Item, Weather, Character, SubLocationAction, VehicleSpec, MonthlyBill } from './types.ts';
+import { EVENTS } from './data/events.ts';
+import { ITEMS } from './data/items.ts';
+import { LOCATIONS } from './data/locations.ts';
+import StatusPanel from './components/StatusPanel.tsx';
+import ScenePanel from './components/ScenePanel.tsx';
+import HistoryPanel from './components/HistoryPanel.tsx';
+import DeviceOverlay from './components/DeviceOverlay.tsx';
+import MapSystem from './components/MapSystem.tsx';
+import InventoryGrid from './components/InventoryGrid.tsx';
 
 const START_DATE = new Date('2026-07-27');
 const WEATHER_ICONS: Record<Weather, string> = {
