@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { PlayerState, LocationId, Location, InventoryItem, Item, Weather, Character, SubLocationAction, VehicleSpec, MonthlyBill } from './types.ts';
-import { EVENTS } from './data/events.ts';
-import { ITEMS } from './data/items.ts';
-import { LOCATIONS } from './data/locations.ts';
-import StatusPanel from './components/StatusPanel.tsx';
-import ScenePanel from './components/ScenePanel.tsx';
-import HistoryPanel from './components/HistoryPanel.tsx';
-import DeviceOverlay from './components/DeviceOverlay.tsx';
-import MapSystem from './components/MapSystem.tsx';
-import InventoryGrid from './components/InventoryGrid.tsx';
+import { PlayerState, LocationId, Location, InventoryItem, Item, Weather, Character, SubLocationAction, VehicleSpec, MonthlyBill } from './types';
+import { EVENTS } from './data/events';
+import { ITEMS } from './data/items';
+import { LOCATIONS } from './data/locations';
+import StatusPanel from './components/StatusPanel';
+import ScenePanel from './components/ScenePanel';
+import HistoryPanel from './components/HistoryPanel';
+import DeviceOverlay from './components/DeviceOverlay';
+import MapSystem from './components/MapSystem';
+import InventoryGrid from './components/InventoryGrid';
 
 const START_DATE = new Date('2026-07-27');
 const WEATHER_ICONS: Record<Weather, string> = {
@@ -95,7 +95,7 @@ const App: React.FC = () => {
       let newInv = [...prev.inventory];
       if (action.gainItem) {
         const spot = findFreeSpot(prev.inventorySize, prev.inventory, action.gainItem);
-        if (spot) newInv.push({ ...action.gainItem, ...spot });
+        if (spot) newInv.push({ ...action.gainItem, ...spot } as InventoryItem);
       }
       return { 
         ...prev, ...others, cash: prev.cash - cost, inventory: newInv, 
@@ -166,7 +166,7 @@ const App: React.FC = () => {
           {activeDevice && <DeviceOverlay type={activeDevice} state={gameState} onClose={() => setActiveDevice(null)} setGameState={setGameState} onEventChoice={() => {}} />}
           {showMap && <MapSystem state={gameState} onClose={() => setShowMap(false)} onTravel={(loc, sub, fuel, time) => { setGameState(prev => ({ ...prev, currentLocation: loc.id, currentSubLocationId: sub.id, hour: (prev.hour + time)%24, vehicle: prev.vehicle ? {...prev.vehicle, fuel: prev.vehicle.fuel - fuel} : null })); setShowMap(false); }} />}
           {showStorage && (
-             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-12 animate-in zoom-in">
+             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-12 animate-in">
                 <div className="max-w-[1400px] w-full bg-[#0a0c10] border border-white/5 rounded-[4rem] overflow-hidden flex flex-col max-h-[95vh] shadow-2xl">
                    <div className="p-12 border-b border-white/5 flex justify-between items-center"><h2 className="text-5xl font-black text-white italic uppercase tracking-tighter">Inventory Transfer</h2><button onClick={() => setShowStorage(null)} className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-white text-2xl hover:bg-white/10">✕</button></div>
                    <div className="flex-1 overflow-auto p-12 flex justify-center gap-16">
@@ -178,7 +178,7 @@ const App: React.FC = () => {
              </div>
           )}
           {activeDialogue && (
-            <div className="absolute inset-0 z-[110] flex items-center justify-center p-12 bg-black/80 backdrop-blur-md animate-in fade-in">
+            <div className="absolute inset-0 z-[110] flex items-center justify-center p-12 bg-black/80 backdrop-blur-md fade-in">
                 <div className="max-w-2xl w-full bg-[#0a0c10] border border-white/5 rounded-[3rem] p-12 shadow-2xl">
                     <div className="flex items-center gap-6 mb-8"><div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center text-5xl border border-white/10">{activeDialogue.char.avatar}</div><div><h2 className="text-3xl font-black text-white italic uppercase">{activeDialogue.char.name}</h2><p className="text-sm text-blue-500 font-bold uppercase tracking-widest">{activeDialogue.char.role}</p></div></div>
                     <div className="p-8 bg-white/5 rounded-3xl border border-white/5 italic text-slate-300 leading-relaxed mb-10 text-lg">"{activeDialogue.text}"</div>
@@ -187,7 +187,7 @@ const App: React.FC = () => {
             </div>
           )}
           {showBills && (
-            <div className="absolute inset-0 z-[120] flex items-center justify-center p-12 bg-black/80 backdrop-blur-md animate-in fade-in">
+            <div className="absolute inset-0 z-[120] flex items-center justify-center p-12 bg-black/80 backdrop-blur-md fade-in">
                <div className="max-w-xl w-full bg-[#0a0c10] border border-white/5 rounded-[3rem] p-10 shadow-2xl flex flex-col gap-8">
                   <div className="flex justify-between items-start"><div><h2 className="text-3xl font-black text-white italic uppercase">Pending Obligations</h2></div><button onClick={() => setShowBills(false)} className="text-xl">✕</button></div>
                   <div className="space-y-4 max-h-[50vh] overflow-y-auto">

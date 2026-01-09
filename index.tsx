@@ -1,12 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
-
-// 防止在浏览器中直接访问 process.env 导致 ReferenceError
-if (typeof window !== 'undefined') {
-  (window as any).process = (window as any).process || { env: {} };
-}
+import App from './App';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
